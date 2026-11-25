@@ -61,17 +61,14 @@ function calculateHarmonyPitch(melodyPitch, keySig, part) {
   const idx = scale.findIndex((n) => n[0] === rawNote[0]);
   if (idx === -1) return melodyPitch;
 
-  // 1) 현재 멜로디 음이 속한 코드 구성음 배열 찾기
   const chordName = NOTE_CHORD_MAP[idx];
   const chordTones = CHORDS[chordName];
   const posInChord = chordTones.indexOf(idx);
 
-  // 2) 코드 내 다음 아래 구성음 선택 (알토: 1단계 아래 코드톤, 테너: 2단계 아래 코드톤)
   const stepBack = part === 'ALTO' ? 1 : 2;
   const targetChordPos = (posInChord - stepBack + 3) % 3;
   const targetIdx = chordTones[targetChordPos];
 
-  // 3) 멜로디보다 아래 음역대로 옥타브 보정
   const currentSemitone = NOTE_TO_SEMITONE[scale[idx]] ?? 0;
   const targetNote = scale[targetIdx];
   const targetSemitone = NOTE_TO_SEMITONE[targetNote] ?? 0;
@@ -177,7 +174,7 @@ export default function App() {
   const [playMode, setPlayMode] = useState('ENSEMBLE');
   const [tempo, setTempo] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [activeStep, setActiveStep] = useState(null); // { measureIdx, noteIdx }
+  const [activeStep, setActiveStep] = useState(null);
 
   const audioCtxRef = useRef(null);
   const timeoutsRef = useRef([]);
@@ -195,7 +192,7 @@ export default function App() {
       reader.onerror = (error) => reject(error);
     });
 
-  // 1단계: Vision AI 악보 이미지 업로드 및 추출
+  // 1단계: Vision AI 악보 이미지 업로드 및 추출 (.env 환경변수 사용)
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -205,11 +202,11 @@ export default function App() {
     setErrorMsg('');
     setUsedModel('');
 
-  const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!envApiKey) {
-    setErrorMsg('.env 파일에 VITE_GEMINI_API_KEY가 설정되지 않았습니다.');
-    return;
-  }
+    const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!envApiKey) {
+      setErrorMsg('API 키가 설정되지 않았습니다. (.env 또는 Vercel 환경변수 VITE_GEMINI_API_KEY 확인)');
+      return;
+    }
 
     setIsAnalyzing(true);
     try {
@@ -407,7 +404,6 @@ export default function App() {
         }
         scheduleTone(harmonyMidi, currentTime, durSec * 0.95, 'triangle', 0.35);
 
-        // 현재 연주 중인 마디와 음표 위치 하이라이트 예약
         const delayMs = Math.max(0, (currentTime - startBaseTime) * 1000);
         const tId = setTimeout(() => {
           setActiveStep({ measureIdx: mIdx, noteIdx: nIdx });
@@ -448,7 +444,6 @@ export default function App() {
       {/* 1단계: 악보 이미지 업로드 및 Vision AI 추출 */}
       <section style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '18px', borderRadius: '10px', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '18px', color: '#1e3a8a', marginTop: 0 }}>1. 악보 이미지 업로드 및 AI 음정 추출</h2>
-
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <label
@@ -557,7 +552,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* 3단계: 성부 선택, 템포(BPM) 조절 및 Web Audio API 재생 (편의성을 위해 테이블 상단 배치) */}
+      {/* 2단계: 성부 선택, 템포(BPM) 조절 및 Web Audio API 재생 */}
       <section style={{ background: '#eff6ff', padding: '20px', borderRadius: '10px', border: '1px solid #bfdbfe', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '18px', color: '#1e3a8a', marginTop: 0 }}>2. 연습 성부 선택 및 화음 오디오 재생</h2>
 
@@ -628,7 +623,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* 템포(BPM) 조절 슬라이더 */}
           <div style={{ minWidth: '180px' }}>
             <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>
               연습 속도 (템포): <span style={{ color: '#2563eb' }}>{tempo} BPM</span>
@@ -688,7 +682,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* 2단계: 음정/박자 확인 및 수정 테이블 (실시간 하이라이트 적용) */}
+      {/* 3단계: 음정/박자 확인 및 수정 테이블 */}
       <section style={{ marginBottom: '24px' }}>
         <h2 style={{ fontSize: '18px', color: '#0f172a' }}>3. 추출된 멜로디 확인 및 수정 (오인식 교정)</h2>
         <p style={{ fontSize: '13px', color: '#64748b' }}>
